@@ -1,0 +1,51 @@
+name: update-version
+
+run-name: ${{ github.actor }} is updating version.txt for latest release
+
+on:
+   # Triggers the workflow on release
+  release:
+    types: [released]
+  workflow_dispatch: # Allow manual trigger workflows
+
+jobs:
+  fetch:
+    name: Fetch Version Info
+    runs-on: ubuntu-latest
+    outputs:
+      stable_ver: ${{ steps.check_ver.outputs.stable_ver }}
+    steps:
+      - uses: mogeko/latest-version@93e47a995b0d6f6ecad8103a20f8ae177337a85a
+        id: check_ver
+        with:
+          repo: datalogic/surelock
+          
+  update-release:
+    name: Update Relase Version File
+    runs-on: ubuntu-latest
+    needs: fetch
+    steps:
+      - uses: actions/checkout@v3
+      - name: "Find env"
+        run: |
+          set | grep GITHUB_ | grep -v GITHUB_TOKEN
+          zip -r pkg.zip *.txt
+          
+      - uses: Radioh/action-content-overwrite@v1.0
+        with:
+          filePath: "${{ github.workspace }}/version.txt"
+          content: '${{ needs.fetch.outputs.stable_ver }}'
+          
+      - uses: xresloader/upload-to-github-release@v1
+        env:
+         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+         file: "${{ github.workspace }}/version.txt;"
+         update_latest_release: true
+         overwrite: true
+         
+      - name: Git Auto Commit
+        uses: stefanzweifel/git-auto-commit-action@v4.16.0
+        with:
+         branch: master
+         file_pattern: '*.txt'
