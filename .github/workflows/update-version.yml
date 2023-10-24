@@ -10,16 +10,16 @@ on:
 
 jobs:
   fetch:
-    name: Fetch Version Info
+    name: Fetch Latest Release
     runs-on: ubuntu-latest
     outputs:
-      stable_ver: ${{ steps.check_ver.outputs.stable_ver }}
+      tag_name: ${{ steps.fetch-latest-release.outputs.tag_name }}
     steps:
-      - uses: mogeko/latest-version@93e47a995b0d6f6ecad8103a20f8ae177337a85a
-        id: check_ver
+      - uses: CityOfLosAngeles/fetch-latest-github-release@v2.0.3
+        id: fetch-latest-release
         with:
-          repo: datalogic/surelock
-          
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+   
   update-release:
     name: Update Relase Version File
     runs-on: ubuntu-latest
@@ -34,7 +34,7 @@ jobs:
       - uses: Radioh/action-content-overwrite@v1.0
         with:
           filePath: "${{ github.workspace }}/version.txt"
-          content: '${{ needs.fetch.outputs.stable_ver }}'
+          content: '${{ needs.fetch.outputs.tag_name }}'
           
       - uses: xresloader/upload-to-github-release@v1
         env:
@@ -45,7 +45,6 @@ jobs:
          overwrite: true
          
       - name: Git Auto Commit
-        uses: stefanzweifel/git-auto-commit-action@v4.16.0
+        uses: stefanzweifel/git-auto-commit-action@v5.0.0
         with:
-         branch: master
          file_pattern: '*.txt'
